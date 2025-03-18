@@ -150,15 +150,13 @@ int pcd_platform_driver_probe(struct platform_device *pdev)
 	pdata = pdev->dev.platform_data;
 	if(!pdata) {
 		pr_info("No platform data available\n");
-		ret = -EINVAL;
-		goto out;
+		return -EINVAL;
 	}
 	/*2. Dynamically allocate memory for the device private data*/
 	dev_data = devm_kzalloc(&pdev->dev, sizeof(struct pcdev_platform_data), GFP_KERNEL);
 	if(!dev_data) {
 		pr_info("Cannot allocate memory");
-		ret = -ENOMEM;
-		goto out;
+		return -ENOMEM;
 	}
 	/*save the device private data pointer in platform device structure*/
 	dev_set_drvdata(&pdev->dev, dev_data);
@@ -176,8 +174,7 @@ int pcd_platform_driver_probe(struct platform_device *pdev)
 	dev_data->buffer = devm_kzalloc(&pdev->dev, dev_data->pdata.size, GFP_KERNEL);
 	if(!dev_data->buffer) {
 		pr_info("Cannot allocate memory\n");
-		ret = -ENOMEM;
-		goto dev_data_free;
+		return -ENOMEM;
 	}
 	/*4. Get the device number*/
 	dev_data->dev_num = pcdrv_data.device_num_base + pdev->id;
@@ -188,28 +185,19 @@ int pcd_platform_driver_probe(struct platform_device *pdev)
 	ret = cdev_add(&dev_data->cdev, dev_data->dev_num,1);
 	if(ret < 0){
 		pr_err("Cdev add failed\n");
-		goto buffer_free;
+		return ret;
 	}
 	/*6. Create device file for the detected platform device*/
 	pcdrv_data.device_pcd = device_create(pcdrv_data.class_pcd, NULL, dev_data->dev_num,NULL,"pcdev-%d",pdev->id );
 	if(IS_ERR(pcdrv_data.device_pcd)){
 		pr_err("Device crate failed\n");
 		ret = PTR_ERR(pcdrv_data.device_pcd);
-		goto cdev_delete;
+		return ret;
 	}
 	pcdrv_data.total_devices++;
 	pr_info("The probe was successful\n");
 	return 0;
-	/*Error Handling*/
-cdev_delete:
-	cdev_del(&dev_data->cdev);
-buffer_free:
-	devm_kfree(&pdev->dev,dev_data->buffer);
-dev_data_free:
-	devm_kfree(&pdev->dev,dev_data);
-out:
-	pr_info("Device probe failed\n");
-	return ret;
+	
 }
 
 
