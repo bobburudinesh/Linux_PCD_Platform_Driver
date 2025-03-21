@@ -162,6 +162,10 @@ ssize_t pcd_write(struct file *filp, const char __user *buff, size_t count, loff
 	if((*f_pos + count)>max_size) {
 		count = max_size - *f_pos;
 	}
+	if(!count){
+		pr_err("No space left on the device \n");
+		return -ENOMEM;
+	}
 	/*Write from user space buffer to kernel space buffer*/
 	if(!copy_from_user(pcdev_data->buffer+(*f_pos), buff, count)){
 		return -EFAULT;
